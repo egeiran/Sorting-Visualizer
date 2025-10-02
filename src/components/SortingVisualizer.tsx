@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ArrayBars from "./ArrayBars";
 import AlgorithmInfoCard from "./AlgorithmInfoCard";
 import type { SortStep, AlgorithmInfo } from "../algorithms/index";
@@ -77,6 +77,7 @@ export default function SortingVisualizer() {
   const arraySize = allowedSizes[arraySizeIdx];
   const [speedIdx, setSpeedIdx] = useState(allowedSpeeds.indexOf(10));
   const speed = allowedSpeeds[speedIdx];
+  const stopRef = useRef(false);
 
 
   const [panels, setPanels] = useState<AlgoSelection[]>([
@@ -97,12 +98,14 @@ export default function SortingVisualizer() {
   }, [arraySize]);
 
   async function stopSorters(){
-    console.log("Hei")
-    // TODO: Implement logic
+    stopRef.current = true;
+    setIsSorting(false)
   }
 
   async function startSorters() {
     resetArray();
+    stopRef.current = false;
+
     const newPanels = panels.map((p) => {
       const fn = algorithms[p.algo].fn;
       return { ...p, steps: fn(array) };
@@ -115,14 +118,18 @@ export default function SortingVisualizer() {
     const startTime = performance.now();
 
     for (let i = 0; i < maxSteps; i++) {
+      if (stopRef.current) break;
+
       await new Promise((res) => setTimeout(res, speed));
       setCurrentStep(i);
     }
 
     const endTime = performance.now();
-    setElapsed(endTime - startTime);
-    setIsSorting(false);
 
+  if (!stopRef.current){
+    setElapsed(endTime - startTime);
+  }
+    setIsSorting(false);
   }
 
   return (
@@ -202,10 +209,12 @@ export default function SortingVisualizer() {
               ))}
             </select>
 
+            {/* {const stepIndex = Math.min(currentStep, p.steps.length - 1);} */}
+
             <ArrayBars
-              array={p.steps[currentStep]?.array || array}
-              highlighted={p.steps[currentStep]?.highlighted || []}
-              sorted={p.steps[currentStep]?.sorted || []}
+              array={p.steps[Math.min(currentStep, p.steps.length - 1)]?.array || array}
+              highlighted={p.steps[Math.min(currentStep, p.steps.length - 1)]?.highlighted || []}
+              sorted={p.steps[Math.min(currentStep, p.steps.length - 1)]?.sorted || []}
             />
 
             {/* Info-kort under */}
